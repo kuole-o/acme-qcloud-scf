@@ -1,5 +1,4 @@
 /**
- *
  * acme-qcloud-scf
  * @author Jeff2Ma
  * @url https://github.com/Jeff2Ma/acme-qcloud-scf
@@ -19,9 +18,9 @@ acme.setLogger((message) => {
 // 读取配置文件
 let config = {};
 try {
-    config = require('./config.custom.js')
+    config = require('./config.js')
 } catch (e) {
-    config = require('./config.example.js')
+    console.log(e);
 }
 
 function log() {
