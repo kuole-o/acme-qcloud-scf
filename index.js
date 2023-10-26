@@ -71,6 +71,18 @@ const cdnClient = new tencentcloud.cdn.v20180606.Client({
     },
 })
 
+async function cdnList(cdnClient) {
+  const params = {};
+  cdnClient.ListCdnDomains(params).then(
+  (data) => {
+    console.log(data);
+    return data
+  },
+  (err) => {
+    console.error("error", err);
+  }
+)};
+
 const webHookUrl = config?.wecomWebHook || ''; // 暂时不用
 
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
@@ -233,7 +245,7 @@ async function initConfig(config, env) {
 
 async function updateCDNDomains(cert, key, CertificateId) {
     const nowStr = moment(new Date()).utcOffset(8).format('YYYY-MM-DD HH:mm:ss');
-    const list = config.cdnDomainList || [];
+    const list = await cdnList(cdnClient) || [];
     if (!list || !list.length) return Promise.resolve({})
     return await Promise.all(list.map(async item => {
         log(`正在为如下 cdn 域名进行 https 证书绑定：${item}, ${CertificateId}`)
