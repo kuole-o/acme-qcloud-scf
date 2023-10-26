@@ -202,7 +202,6 @@ async function uploadCert2QcloudSSL(cert, key) {
 
     if (TotalCount && Certificates.length) {
         await Promise.all(Certificates.map(async (item, index) => {
-            // 使用 setTimeout 来等待一秒
             await new Promise(resolve => setTimeout(resolve, index * 300));
             
             await sslClient.DeleteCertificate({
@@ -236,7 +235,7 @@ async function initConfig(config, env) {
 
 async function updateCDNDomains(cert, key, CertificateId) {
     const nowStr = moment(new Date()).utcOffset(8).format('YYYY-MM-DD HH:mm:ss');
-    const list = config.cdnDomainList || [];
+    const list = (config.cdnDomainList || '').split(',').map(domain => domain.trim());
     if (!list || !list.length) return Promise.resolve({})
     return await Promise.all(list.map(async item => {
         log(`正在为如下 cdn 域名进行 https 证书绑定：${item}, ${CertificateId}`)
