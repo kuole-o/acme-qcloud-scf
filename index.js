@@ -70,18 +70,6 @@ const cdnClient = new tencentcloud.cdn.v20180606.Client({
     },
 })
 
-async function cdnList(cdnClient) {
-  const params = {};
-  cdnClient.ListCdnDomains(params).then(
-  (data) => {
-    console.log(data);
-    return data
-  },
-  (err) => {
-    console.error("error", err);
-  }
-)};
-
 const webHookUrl = config?.wecomWebHook || ''; // 暂时不用
 
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
@@ -205,19 +193,23 @@ async function uploadCert2QcloudSSL(cert, key) {
     log('正在上传到腾讯云 SSL 管理...');
 
     // 待删除旧的
-    const {TotalCount, Certificates} = await sslClient.DescribeCertificates(
+    const { TotalCount, Certificates } = await sslClient.DescribeCertificates(
         {
             SearchKey: config.domain
         }
     ).catch(() => {
     })
+
     if (TotalCount && Certificates.length) {
-        await Promise.all(Certificates.map(async item => {
+        await Promise.all(Certificates.map(async (item, index) => {
+            // 使用 setTimeout 来等待一秒
+            await new Promise(resolve => setTimeout(resolve, index * 300));
+            
             await sslClient.DeleteCertificate({
                 CertificateId: item.CertificateId
-            })
-            log(`正在删除${item.CertificateId}, ${item.Domain} 证书`)
-        }))
+            });
+            log(`正在删除${item.CertificateId}, ${item.Domain} 证书`);
+        }));
     }
 
     const uploadCertificateRes = await sslClient.UploadCertificate({
@@ -225,10 +217,10 @@ async function uploadCert2QcloudSSL(cert, key) {
         CertificatePrivateKey: key.toString(),
         Alias: config.domain
     }).catch((e) => {
-        console.error(e)
-    })
-    log('上传本次产生的证书: ', uploadCertificateRes)
-    return uploadCertificateRes
+        console.error(e);
+    });
+    log('上传本次产生的证书: ', uploadCertificateRes);
+    return uploadCertificateRes;
 }
 
 async function initConfig(config, env) {
@@ -244,7 +236,7 @@ async function initConfig(config, env) {
 
 async function updateCDNDomains(cert, key, CertificateId) {
     const nowStr = moment(new Date()).utcOffset(8).format('YYYY-MM-DD HH:mm:ss');
-    const list = await cdnList(cdnClient) || [];
+    const list = config.cdnDomainList || [];
     if (!list || !list.length) return Promise.resolve({})
     return await Promise.all(list.map(async item => {
         log(`正在为如下 cdn 域名进行 https 证书绑定：${item}, ${CertificateId}`)
@@ -320,8 +312,8 @@ const main_handler = async (event = {}, context = {}, callback) => {
     const order = await client.createOrder({
         wildcard: true,
         identifiers: [
-            {type: 'dns', value: `${config.domain}`},
-            {type: 'dns', value: `*.${config.domain}`}
+            { type: 'dns', value: `${config.domain}` },
+            { type: 'dns', value: `*.${config.domain}` }
         ]
     });
 
@@ -343,7 +335,7 @@ const main_handler = async (event = {}, context = {}, callback) => {
              * One of these challenges needs to be satisfied.
              */
 
-            const {challenges} = authz;
+            const { challenges } = authz;
 
             /* Just select Dns Way */
             const challenge = challenges.find(c => c.type === 'dns-01');
@@ -369,7 +361,7 @@ const main_handler = async (event = {}, context = {}, callback) => {
             } finally {
                 /* Clean up challenge response */
                 try {
-                   // await challengeRemoveFn(authz, challenge, keyAuthorization);
+                    // await challengeRemoveFn(authz, challenge, keyAuthorization);
                 } catch (e) {
                     /**
                      * Catch errors thrown by challengeRemoveFn() so the order can
@@ -410,7 +402,7 @@ const main_handler = async (event = {}, context = {}, callback) => {
         log(`CSR:\n${csr.toString()}`);
         log(`Private key:\n${key.toString()}`);
         log(`Certificate:\n${cert.toString()}`);
-        const {CertificateId} = await uploadCert2QcloudSSL(cert, key);
+        const { CertificateId } = await uploadCert2QcloudSSL(cert, key);
         await updateCDNDomains(cert, key, CertificateId)
     } catch (e) {
         log('Finalize order error: ', e)
