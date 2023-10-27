@@ -6,6 +6,5 @@ module.exports = {
     qcloudSecretKey: process.env.Tcb_SecretKey, // 腾讯云 SecretKey
     dnspodServer: 'dnspod.cn', // 国内版用 dnspod.cn（默认），国际版用 dnspod.com
     dnspodToken: process.env.Tcb_DnspodToken, // 在 https://console.dnspod.cn/account/token/token 生成，合在一块用, 隔开
-    cdnDomainList: process.env.Tcb_CdnDomainList,
     wecomWebHook: process.env.WeComWebHook, // 企业微信机器人通知 webhook
 }
