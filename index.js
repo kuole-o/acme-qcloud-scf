@@ -70,6 +70,24 @@ const cdnClient = new tencentcloud.cdn.v20180606.Client({
     },
 })
 
+async function cdnList() {
+  const params = {};
+  try {
+    const data = await cdnClient.DescribeDomains(params);
+    if (data && data.Domains) {
+      const domainArray = data.Domains.map((domainInfo) => domainInfo.Domain);
+      console.log(domainArray);
+      return domainArray;
+    } else {
+      console.error("Error: Unable to retrieve domain data");
+      return [];
+    }
+  } catch (err) {
+    console.error("error", err);
+    return [];
+  }
+}
+
 const webHookUrl = config?.wecomWebHook || ''; // 暂时不用
 
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
@@ -235,7 +253,7 @@ async function initConfig(config, env) {
 
 async function updateCDNDomains(cert, key, CertificateId) {
     const nowStr = moment(new Date()).utcOffset(8).format('YYYY-MM-DD HH:mm:ss');
-    const list = (config.cdnDomainList || '').split(',').map(domain => domain.trim());
+    const list = await cdnList();
     if (!list || !list.length) return Promise.resolve({})
     return await Promise.all(list.map(async item => {
         log(`正在为如下 cdn 域名进行 https 证书绑定：${item}, ${CertificateId}`)
@@ -402,7 +420,10 @@ const main_handler = async (event = {}, context = {}, callback) => {
         log(`Private key:\n${key.toString()}`);
         log(`Certificate:\n${cert.toString()}`);
         const { CertificateId } = await uploadCert2QcloudSSL(cert, key);
-        await updateCDNDomains(cert, key, CertificateId)
+        const { list } = await updateCDNDomains(cert, key, CertificateId);
+        await postWeComRobotMsg({
+          content: `SSL 证书已更新！\n\n证书ID：${CertificateId}\n更新域名：\n${list}`
+      })
     } catch (e) {
         log('Finalize order error: ', e)
         await postWeComRobotMsg({
@@ -412,5 +433,19 @@ const main_handler = async (event = {}, context = {}, callback) => {
     // 清空多余的 dnsPod 记录
     await removeOldDNSRecords()
 };
+
+// 调试
+const main_handler_bak = async (event = {}, context = {}, callback) => {
+  try {
+      const params = {};
+      const data = await cdnClient.DescribeDomains(params);
+      const domainArray = data.Domains.map((domainInfo) => domainInfo.Domain);
+      console.log(domainArray);
+      return domainArray;
+  } catch (err) {
+      console.error("error", err);
+      return err;
+  }
+}
 
 exports.main_handler = main_handler
