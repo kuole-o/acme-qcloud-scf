@@ -6,7 +6,6 @@ build
 .git
 .idea
 dist
-config.js
 page/*.html
 tmp
 .nvm
