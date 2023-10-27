@@ -1,3 +1,9 @@
+## 在原作者方法上改进
+
+- 无需配置 cdnDomainList ：不再从配置中获取 cdn 域名列表，使用 DescribeDomains 方法自动获取；
+- 延迟处理：执行删除旧证书时，增加 300ms 延迟，避免超出 1s 最多 10 条的最大限制导致的接口报错；  
+- 成功通知：增加了更新成功时机器人通知信息；  
+
 # acme-qcloud-scf
 
 借助腾讯云·云函数实现的 ACME Let’s Encrypt SSL 证书自动更新（Node.js 版本）。
