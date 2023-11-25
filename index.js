@@ -306,9 +306,18 @@ async function postWeComRobotMsg(options) {
     });
 }
 
-const main_handler = async (event = {}, context = {}, callback) => {
+const main_handler = async (event, context = {}, callback) => {
+  const { requestContext, headers, body, pathParameters, queryStringParameters, headerParameters, path, queryString, httpMethod, MsgId } = event;
   const environment = context?.environment || {}
   config = await initConfig(config, environment);
+
+  // 处理函数定时激活
+  const isScfActivation = (queryString && queryString.auto) || (event && event.auto) || false;
+  if (isScfActivation) {
+    return {
+      "message": "Success 触发云函数成功！"
+    }
+  }
 
   // 云函数环境特有
   if (config['SCF_NAMESPACE']) {
@@ -441,7 +450,7 @@ const main_handler = async (event = {}, context = {}, callback) => {
 };
 
 // 调试
-const main_handler_bak = async (event = {}, context = {}, callback) => {
+const main_handler_bak = async (event, context = {}, callback) => {
   try {
     const params = {};
     const data = await cdnClient.DescribeDomains(params);
