@@ -8,6 +8,7 @@ let isScfEnv = false; // 是否是云函数环境
 const moment = require('moment');
 const acme = require('acme-client');
 const tencentcloud = require("tencentcloud-sdk-nodejs");
+const token = process.env.token;
 const axios = require('axios');
 const appName = '[acme-qcloud-scf]';
 
@@ -308,6 +309,20 @@ async function postWeComRobotMsg(options) {
 
 const main_handler = async (event, context = {}, callback) => {
   const { requestContext, headers, body, pathParameters, queryStringParameters, headerParameters, path, queryString, httpMethod, MsgId } = event;
+
+  // 简单鉴权
+  const request_token =
+    (headers && headers.token) ||
+    (queryString && queryString.token) ||
+    (event && event.token) ||
+    "";
+  if (request_token !== token) return {
+    "isBase64Encoded": false,
+    "statusCode": 401,
+    "headers": { "Content-Type": "text/plain; charset=utf-8" },
+    "body": "Unauthorized",
+  }
+
   const environment = context?.environment || {}
   config = await initConfig(config, environment);
 
@@ -315,7 +330,10 @@ const main_handler = async (event, context = {}, callback) => {
   const isScfActivation = (queryString && queryString.auto) || (event && event.auto) || false;
   if (isScfActivation) {
     return {
-      "message": "Success 触发云函数成功！"
+      "isBase64Encoded": false,
+      "statusCode": 200,
+      "headers": { "Content-Type": "text/plain; charset=utf-8" },
+      "body": "Success 触发云函数成功！"
     }
   }
 
