@@ -263,7 +263,6 @@ async function updateCDNDomains(cert, key, CertificateId) {
         Domain: item,
         Https: {
           Switch: 'on',
-          Http2: 'on',
           CertInfo: {
             CertId: CertificateId,
             Message: `${appName}${nowStr}`,
